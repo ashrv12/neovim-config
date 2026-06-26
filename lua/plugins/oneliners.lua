@@ -38,21 +38,4 @@ return {
             })
         end,
     },
-
-    {
-        "windwp/nvim-ts-autotag",
-        ft = {
-            "javascript",
-            "typescript",
-            "javascriptreact",
-            "typescriptreact",
-            "html",
-            "svelte",
-            "tsx",
-            "jsx",
-        },
-        config = function()
-            require("nvim-ts-autotag").setup()
-        end,
-    },
 }
