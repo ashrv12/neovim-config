@@ -1,16 +1,17 @@
 return {
     "nvim-treesitter/nvim-treesitter",
     build = ":TSUpdate",
-
     config = function()
-        local configs = require("nvim-treesitter.configs")
-        configs.setup({
+        -- The main module is now just 'nvim-treesitter'
+        local treesitter = require("nvim-treesitter")
+        
+        treesitter.setup({
             highlight = {
                 enable = true,
-
             },
             indent = { enable = true },
-            autotage = { enable = true },
+            -- Note: 'autotag' requires the 'nvim-ts-autotag' plugin
+            -- autotag = { enable = true }, 
             ensure_installed = {
                 "lua",
                 "go",
@@ -32,3 +33,4 @@ return {
         })
     end
 }
+
