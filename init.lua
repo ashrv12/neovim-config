@@ -3,3 +3,6 @@ require("config.keybinds")
 require("config.lazy")
 
 print("why is this not working?")
+
+vim.opt.clipboard = "unnamedplus"
+
