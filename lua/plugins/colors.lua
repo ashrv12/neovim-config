@@ -3,6 +3,13 @@ local function enable_transparency()
 end
 return {
     {
+	"lukas-reineke/indent-blankline.nvim",
+	main = "ibl",
+	---@module "ibl"
+	---@type ibl.config
+	opts = {},
+    },
+    {
 	"rose-pine/neovim",
 	name = "rose-pine",
 	config = function()
