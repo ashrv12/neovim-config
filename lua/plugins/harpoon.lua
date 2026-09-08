@@ -1,15 +1,15 @@
-local conf = require("telescope.config").values
-local themes = require("telescope.themes")
-
 -- helper function to use telescope on harpoon list.
 -- change get_ivy to other themes if wanted
 local function toggle_telescope(harpoon_files)
+    local conf = require("telescope.config").values
+    local themes = require("telescope.themes")
+
     local file_paths = {}
     for _, item in ipairs(harpoon_files.items) do
         table.insert(file_paths, item.value)
     end
     local opts = themes.get_ivy({
-        promt_title = "Working List",
+        prompt_title = "Working List",
     })
 
     require("telescope.pickers")
@@ -28,23 +28,29 @@ return {
     branch = "harpoon2",
     dependencies = {
         "nvim-lua/plenary.nvim",
+        "nvim-telescope/telescope.nvim",
     },
     config = function()
         local harpoon = require("harpoon")
+
+        -- harpoon2 requires setup() to be called; without it the lists are
+        -- never initialised.
+        harpoon:setup()
+
         vim.keymap.set("n", "<leader>a", function()
             harpoon:list():add()
-        end)
+        end, { desc = "Harpoon: add file" })
         vim.keymap.set("n", "<C-e>", function()
             harpoon.ui:toggle_quick_menu(harpoon:list())
-        end)
+        end, { desc = "Harpoon: toggle quick menu" })
         vim.keymap.set("n", "<leader>fl", function()
             toggle_telescope(harpoon:list())
-        end, { desc = "Open harpoon window" })
+        end, { desc = "Harpoon: open in telescope" })
         vim.keymap.set("n", "<C-p>", function()
             harpoon:list():prev()
-        end)
+        end, { desc = "Harpoon: previous file" })
         vim.keymap.set("n", "<C-n>", function()
             harpoon:list():next()
-        end)
+        end, { desc = "Harpoon: next file" })
     end,
 }

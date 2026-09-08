@@ -1,8 +1,8 @@
 return {
     "neovim/nvim-lspconfig",
     dependencies = {
-        "williamboman/mason.nvim",
-        "williamboman/mason-lspconfig.nvim",
+        "mason-org/mason.nvim",
+        "mason-org/mason-lspconfig.nvim",
         -- Autocompletion
         "hrsh7th/nvim-cmp",
         "hrsh7th/cmp-buffer",
@@ -15,41 +15,27 @@ return {
         "rafamadriz/friendly-snippets",
     },
     config = function()
-        local autoformat_filetypes = {
-            "rust",
-            "go",
-            "typescript",
-            "typescriptreact",
-            "javascript",
-            "javascriptreact",
-            "zig",
-        }
-        -- Create a keymap for vim.lsp.buf.implementation
-        vim.api.nvim_create_autocmd("LspAttach", {
-            callback = function(args)
-                local client = vim.lsp.get_client_by_id(args.data.client_id)
-                if not client then
-                    return
-                end
-                if vim.tbl_contains(autoformat_filetypes, vim.bo.filetype) then
-                    vim.api.nvim_create_autocmd("BufWritePre", {
-                        buffer = args.buf,
-                        callback = function()
-                            vim.lsp.buf.format({
-                                formatting_options = { tabSize = 4, insertSpaces = true },
-                                bufnr = args.buf,
-                                id = client.id,
-                            })
-                        end,
-                    })
-                end
-            end,
+        -- Defaults applied to every language server. Must run before any server
+        -- is enabled, which is what mason-lspconfig's setup() does below.
+        -- nvim-lspconfig v2 no longer reads lspconfig.util.default_config; the
+        -- native vim.lsp.config is the only thing that feeds the client now.
+        --
+        -- Deliberately does NOT enable workspace.didChangeWatchedFiles.
+        -- dynamicRegistration. Neovim defaults it off; turning it on makes
+        -- servers hand their watch globs to us, and Neovim's Linux backend then
+        -- runs `inotifywait --recursive` over the entire project -- it filters
+        -- events by glob but watches every directory regardless, build output
+        -- included. Cargo's target/ churns through short-lived temp dirs, so
+        -- inotifywait writes to stderr and every line becomes an error message
+        -- ("inotify: Couldn't watch new directory ...") plus a hit-enter prompt.
+        -- Left off, each server uses its own file watcher instead.
+        vim.lsp.config("*", {
+            capabilities = vim.tbl_deep_extend(
+                "force",
+                vim.lsp.protocol.make_client_capabilities(),
+                require("cmp_nvim_lsp").default_capabilities()
+            ),
         })
-
-        -- Add borders to floating windows
-        vim.lsp.handlers["textDocument/hover"] = vim.lsp.buf.hover({ border = 'rounded' })
-        vim.lsp.handlers["textDocument/signatureHelp"] =
-            vim.lsp.buf.signature_help({ border = 'rounded' })
 
         -- Configure error/warnings interface
         vim.diagnostic.config({
@@ -71,36 +57,70 @@ return {
             },
         })
 
-        -- Add cmp_nvim_lsp capabilities settings to lspconfig
-        -- This should be executed before you configure any language server
-        local lspconfig_defaults = require("lspconfig").util.default_config
-        lspconfig_defaults.capabilities = vim.tbl_deep_extend(
-            "force",
-            lspconfig_defaults.capabilities,
-            require("cmp_nvim_lsp").default_capabilities()
-        )
+        local autoformat_filetypes = {
+            "rust",
+            "go",
+            "typescript",
+            "typescriptreact",
+            "javascript",
+            "javascriptreact",
+            "zig",
+        }
 
-        -- This is where you enable features that only work
-        -- if there is a language server active in the file
+        local format_group = vim.api.nvim_create_augroup("UserLspFormat", { clear = true })
+
         vim.api.nvim_create_autocmd("LspAttach", {
+            group = vim.api.nvim_create_augroup("UserLspAttach", { clear = true }),
             callback = function(event)
-                local opts = { buffer = event.buf }
+                local client = vim.lsp.get_client_by_id(event.data.client_id)
+                if not client then
+                    return
+                end
 
-                vim.keymap.set("n", "K", "<cmd>lua vim.lsp.buf.hover()<cr>", opts)
-                vim.keymap.set("n", "gd", "<cmd>lua vim.lsp.buf.definition()<cr>", opts)
-                vim.keymap.set("n", "gD", "<cmd>lua vim.lsp.buf.declaration()<cr>", opts)
-                vim.keymap.set("n", "gi", "<cmd>lua vim.lsp.buf.implementation()<cr>", opts)
-                vim.keymap.set("n", "go", "<cmd>lua vim.lsp.buf.type_definition()<cr>", opts)
-                vim.keymap.set("n", "gr", "<cmd>lua vim.lsp.buf.references()<cr>", opts)
-                vim.keymap.set("n", "gs", "<cmd>lua vim.lsp.buf.signature_help()<cr>", opts)
-                vim.keymap.set("n", "gl", "<cmd>lua vim.diagnostic.open_float()<cr>", opts)
-                vim.keymap.set("n", "<F2>", "<cmd>lua vim.lsp.buf.rename()<cr>", opts)
-                vim.keymap.set({ "n", "x" }, "<F3>", "<cmd>lua vim.lsp.buf.format({async = true})<cr>", opts)
-                vim.keymap.set("n", "<F4>", "<cmd>lua vim.lsp.buf.code_action()<cr>", opts)
+                -- Format on save, but only for the one client that can do it,
+                -- so two attached servers don't format the buffer twice.
+                if
+                    vim.tbl_contains(autoformat_filetypes, vim.bo[event.buf].filetype)
+                    and client:supports_method("textDocument/formatting")
+                then
+                    vim.api.nvim_clear_autocmds({ group = format_group, buffer = event.buf })
+                    vim.api.nvim_create_autocmd("BufWritePre", {
+                        group = format_group,
+                        buffer = event.buf,
+                        callback = function()
+                            vim.lsp.buf.format({
+                                formatting_options = { tabSize = 4, insertSpaces = true },
+                                bufnr = event.buf,
+                                id = client.id,
+                            })
+                        end,
+                    })
+                end
+
+                -- Features that only work when a language server is attached
+                local function map(mode, lhs, rhs, desc)
+                    vim.keymap.set(mode, lhs, rhs, { buffer = event.buf, desc = desc })
+                end
+
+                map("n", "K", vim.lsp.buf.hover, "LSP: hover documentation")
+                map("n", "gd", vim.lsp.buf.definition, "LSP: go to definition")
+                map("n", "gD", vim.lsp.buf.declaration, "LSP: go to declaration")
+                map("n", "gi", vim.lsp.buf.implementation, "LSP: go to implementation")
+                map("n", "go", vim.lsp.buf.type_definition, "LSP: go to type definition")
+                map("n", "gr", vim.lsp.buf.references, "LSP: list references")
+                map("n", "gs", vim.lsp.buf.signature_help, "LSP: signature help")
+                map("n", "gl", vim.diagnostic.open_float, "LSP: show line diagnostics")
+                map("n", "<F2>", vim.lsp.buf.rename, "LSP: rename symbol")
+                map({ "n", "x" }, "<F3>", function()
+                    vim.lsp.buf.format({ async = true })
+                end, "LSP: format")
+                map("n", "<F4>", vim.lsp.buf.code_action, "LSP: code action")
             end,
         })
 
         require("mason").setup({})
+        -- mason-lspconfig 2.x dropped the `handlers` option. Installed servers
+        -- are enabled automatically via vim.lsp.enable().
         require("mason-lspconfig").setup({
             ensure_installed = {
                 "ts_ls",
@@ -108,12 +128,6 @@ return {
                 "rust_analyzer",
                 "gopls",
                 "zls",
-            },
-            handlers = {
-                -- default handler applies to every language server
-                function(server_name)
-                    require("lspconfig")[server_name].setup({})
-                end,
             },
         })
 
@@ -163,7 +177,7 @@ return {
                 ["<C-u>"] = cmp.mapping.scroll_docs(-5),
 
                 -- toggle completion menu
-                ["<C-e>"] = cmp.mapping(function(fallback)
+                ["<C-e>"] = cmp.mapping(function()
                     if cmp.visible() then
                         cmp.abort()
                     else
