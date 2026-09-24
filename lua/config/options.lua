@@ -39,3 +39,10 @@ vim.opt.foldlevelstart = 99
 
 -- Share the system clipboard
 vim.opt.clipboard = "unnamedplus"
+
+-- ocaml file extension helper --
+vim.filetype.add({ extension = {
+    mli = "ocamlinterface",
+    mll = "ocamllex",
+    mly = "menhir"
+}})

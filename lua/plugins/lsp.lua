@@ -65,6 +65,8 @@ return {
             "javascript",
             "javascriptreact",
             "zig",
+            "ocaml",
+            "ocamlinterface"
         }
 
         local format_group = vim.api.nvim_create_augroup("UserLspFormat", { clear = true })
@@ -115,6 +117,10 @@ return {
                     vim.lsp.buf.format({ async = true })
                 end, "LSP: format")
                 map("n", "<F4>", vim.lsp.buf.code_action, "LSP: code action")
+
+                if client.name == "ocamllsp" then
+                    map("n", "<leader>oa", "<cmd>LspOcamllspSwitchImplIntf<cr>", "Ocaml: switch .ml/.mli")
+                end
             end,
         })
 
@@ -130,6 +136,9 @@ return {
                 "zls",
             },
         })
+
+        -- ocaml lsp enabled --
+        vim.lsp.enable("ocamllsp")
 
         local cmp = require("cmp")
 

@@ -2,9 +2,6 @@ return {
     {
         "windwp/nvim-autopairs",
         event = "InsertEnter",
-        config = true,
-        -- use opts = {} for passing setup options
-        -- this is equivalent to setup({}) function
         opts = {
             disable_filetype = {
                 "TelescopePrompt",
@@ -16,6 +13,19 @@ return {
                 "typescriptreact",
             },
         },
+
+        config = function(_, opts)
+            local npairs = require("nvim-autopairs")
+            npairs.setup(opts)
+            
+            -- ' starts type variables ('a) in OCaml, not just char literals.
+            -- Append rather than replace: this rule already excludes rust/nix.
+            local quote = npairs.get_rules("'")[1]
+            table.insert(quote.not_filetypes, "ocaml")
+            table.insert(quote.not_filetypes, "ocamlinterface")
+
+            npairs.force_attach()
+        end,
     },
     { -- this helps with ssh tunneling and copying to clipboard
         "ojroques/vim-oscyank",
