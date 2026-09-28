@@ -1,20 +1,14 @@
 return {
     {
-        "rose-pine/neovim",
-        name = "rose-pine",
+        "sainnhe/sonokai",
         lazy = false,
         priority = 1000, -- load the colorscheme before anything that highlights
-        opts = {
-            styles = {
-                -- rose-pine's own transparency handles every background group,
-                -- and survives a colorscheme reload. Setting Normal by hand did
-                -- neither.
-                transparency = true,
-            },
-        },
-        config = function(_, opts)
-            require("rose-pine").setup(opts)
-            vim.cmd.colorscheme("rose-pine")
+        config = function()
+            vim.g.sonokai_style = "default"
+            vim.g.sonokai_transparent_background = 2
+            vim.g.sonokai_enable_italic = 1
+            vim.g.sonokai_better_performance = 1
+            vim.cmd.colorscheme("sonokai")
         end,
     },
     {
@@ -33,7 +27,7 @@ return {
             -- lualine reads the theme from `options.theme`; a top-level `theme`
             -- key was silently ignored (and tokyonight isn't installed).
             options = {
-                theme = "rose-pine",
+                theme = "sonokai",
             },
         },
     },
