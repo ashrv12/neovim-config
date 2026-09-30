@@ -64,6 +64,7 @@ return {
             "typescriptreact",
             "javascript",
             "javascriptreact",
+            "svelte",
             "zig",
             "ocaml",
             "ocamlinterface"
@@ -131,10 +132,24 @@ return {
             ensure_installed = {
                 "ts_ls",
                 "eslint",
+                "svelte",
                 "rust_analyzer",
                 "gopls",
                 "zls",
             },
+        })
+
+        -- lspconfig's svelte root_dir only attaches when the file exists on
+        -- disk, so a brand-new .svelte buffer gets no server until reopened.
+        -- Re-run the FileType attach once the first write has created it.
+        vim.api.nvim_create_autocmd("BufWritePost", {
+            group = vim.api.nvim_create_augroup("UserSvelteAttach", { clear = true }),
+            pattern = "*.svelte",
+            callback = function(event)
+                if #vim.lsp.get_clients({ bufnr = event.buf, name = "svelte" }) == 0 then
+                    vim.api.nvim_exec_autocmds("FileType", { buffer = event.buf })
+                end
+            end,
         })
 
         -- ocaml lsp enabled --

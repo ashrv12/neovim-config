@@ -23,6 +23,7 @@ local ensure_installed = {
     "javascript",
     "rust",
     "svelte",
+    "css", -- injected into svelte/html <style> blocks
 }
 
 return {
