@@ -67,7 +67,8 @@ return {
             "svelte",
             "zig",
             "ocaml",
-            "ocamlinterface"
+            "ocamlinterface",
+            "glsl",
         }
 
         local format_group = vim.api.nvim_create_augroup("UserLspFormat", { clear = true })
@@ -136,6 +137,7 @@ return {
                 "rust_analyzer",
                 "gopls",
                 "zls",
+                "glsl_analyzer",
             },
         })
 

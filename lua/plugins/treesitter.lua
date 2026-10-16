@@ -24,6 +24,7 @@ local ensure_installed = {
     "rust",
     "svelte",
     "css", -- injected into svelte/html <style> blocks
+    "glsl",
 }
 
 return {
