@@ -136,7 +136,6 @@ return {
                 "svelte",
                 "rust_analyzer",
                 "gopls",
-                "zls",
                 "glsl_analyzer",
             },
         })
@@ -156,6 +155,10 @@ return {
 
         -- ocaml lsp enabled --
         vim.lsp.enable("ocamllsp")
+
+        -- zls must match the zig version exactly, so use Homebrew's zls, which
+        -- is upgraded in lockstep with zig, rather than a Mason copy that lags.
+        vim.lsp.enable("zls")
 
         local cmp = require("cmp")
 
